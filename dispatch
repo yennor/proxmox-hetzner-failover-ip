@@ -1,0 +1,28 @@
+#!/bin/bash
+
+action=$1
+host=$2
+nic=enp0s31f6
+resource_dir=/etc/pve/failover
+script_dir=/etc/failover
+#logger $action $host
+
+if [ -f $resource_dir/$host ]; then 
+	host_ip=$(cat $resource_dir/$host | grep "^ip" | awk '{ print $2 }')
+	if [ "$action" == "MOVED_FROM" ]; then
+		logger "Host $host Migrated away. Bring route for $host_ip down"
+		# The host was moved away
+		ip route del $host_ip
+	else
+		# The host was moved here. Note that that event also gets called when moving away
+		# that's why we verify the address, since the robot needs a long time to swtich over
+		# the address, that code here also works on concurrent access from different hosts
+		local_ip=$(ip addr show $nic | grep inet | awk '{print $2}' | head -n 1)
+		current_routed_to_ip=$($script_dir/failover 200.conf get | grep currently | awk '{print $7}')
+		if [ "$local_ip" != "$current_routed_to_ip"  ]; then
+			$script_dir/failover $host set $local_ip
+			logger "Host $host migrated here. Bring route up for $host_ip"
+			ip route add $host_ip dev vmbr0
+		fi
+	fi
+fi

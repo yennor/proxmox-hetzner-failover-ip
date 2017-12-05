@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# CONFIGURATION
+
+#wait until filesystem is mounted
+logger start monitor
+while [ ! -d /etc/pve/qemu-server ]
+do
+	sleep 1
+done
+
+# TODO. we should check if the host is already on that computer, and then put up the routes and switch over the routing
+
+nohup inotifywait -q -m -e moved_to,moved_from --format "%e %f" /etc/pve/qemu-server  | while read file; do /etc/failover/dispatch $file; done &
