@@ -2,7 +2,7 @@
 
 #add 
 #post-up /etc/failover/vm_subnet_change
-" to /etc/network/interfaces
+# to /etc/network/interfaces
 
 vm_id=103
 
